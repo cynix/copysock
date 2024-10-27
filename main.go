@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"syscall"
@@ -47,7 +48,19 @@ func main() {
 			log.Fatalf("Invalid connect address: %s", connect)
 		}
 
-		if ln == "unix" {
+		mode := os.FileMode(0600)
+
+		if strings.HasPrefix(ln, "unix") {
+			var m string
+			ln, m, _ = strings.Cut(ln, "@")
+			if len(m) > 0 {
+				mv, err := strconv.ParseInt(m, 8, 32)
+				if err != nil {
+					log.Fatalf("Invalid socket mode %s: %v", m, err)
+				}
+				mode = os.FileMode(mv) & 0777
+			}
+
 			if err := os.MkdirAll(filepath.Dir(la), 0755); err != nil {
 				log.Fatal(err)
 			}
@@ -60,6 +73,7 @@ func main() {
 
 		if ln == "unix" {
 			defer os.Remove(la)
+			os.Chmod(la, mode)
 		}
 
 		go proxy(l, cn, ca)
