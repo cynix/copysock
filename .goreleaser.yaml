@@ -1,0 +1,46 @@
+version: 2
+project_name: copysock
+
+builds:
+  - env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -X=main.Version={{ .Version }}
+      - -extldflags=-static
+      - -s
+      - -w
+    mod_timestamp: "{{ .CommitTimestamp }}"
+    goos:
+      - darwin
+      - freebsd
+      - linux
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    goarm:
+      - 7
+    ignore:
+      - goos: darwin
+        goarch: arm
+      - goos: freebsd
+        goarch: arm
+
+universal_binaries:
+  - replace: true
+
+checksum:
+  name_template: 'checksums.txt'
+
+archives:
+  - name_template: '{{ .ProjectName }}-v{{ .Version }}-{{ .Os }}_{{ .Arch }}{{ with .Arm }}v{{ . }}{{ end }}'
+    builds_info:
+      owner: root
+      group: root
+      mtime: "{{ .CommitTimestamp }}"
+    wrap_in_directory: false
+
+release:
+  name_template: 'v{{ .Version }}'
